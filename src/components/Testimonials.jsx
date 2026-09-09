@@ -4,7 +4,7 @@ const REVIEWS = [
   {
     name: "Priya M.",
     handle: "@priyathrifts",
-    text: "Copped a Y2K windbreaker for $42 that would've been $150 anywhere else. The condition tags are actually accurate too.",
+    text: "Copped a Y2K windbreaker for ₹3,499 that would've been ₹9,999 anywhere else. The condition tags are actually accurate too.",
     rating: 5,
   },
   {

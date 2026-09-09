@@ -18,7 +18,9 @@ import { useAuth, DEMO_CREDENTIALS } from "../context/AuthContext"
 const PERKS = [
   { icon: Sparkles, text: "One-of-one vintage, hand-picked weekly" },
   { icon: ShieldCheck, text: "Every piece inspected, cleaned and steamed" },
-  { icon: Truck, text: "Free carbon-neutral shipping over $50" },
+  // Checkout charges no shipping at any basket size, so promising a threshold here
+  // would advertise a rule the app does not actually apply.
+  { icon: Truck, text: "Free carbon-neutral shipping on every order" },
 ]
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
