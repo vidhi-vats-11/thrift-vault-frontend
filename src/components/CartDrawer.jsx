@@ -1,5 +1,6 @@
 import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { formatPrice } from "../lib/currency"
 
 export default function CartDrawer({ onCheckout }) {
   const { lines, isCartOpen, setCartOpen, removeFromCart, updateQty, subtotal, clearCart } =
@@ -84,7 +85,7 @@ export default function CartDrawer({ onCheckout }) {
                             <p className="truncate text-sm font-semibold text-white">{line.name}</p>
                             <p className="text-xs text-white/40">{line.brand}</p>
                             <p className="text-xs text-white/40">
-                              Size <span className="text-white/70">{line.size}</span> · ${line.price}
+                              Size <span className="text-white/70">{line.size}</span> · {formatPrice(line.price)}
                             </p>
                           </div>
                         </div>
@@ -111,7 +112,7 @@ export default function CartDrawer({ onCheckout }) {
                         </div>
                       </td>
                       <td className="border border-x-0 border-line bg-surface2 p-2 text-right text-sm font-semibold text-white">
-                        ${(line.price * line.qty).toFixed(2)}
+                        {formatPrice(line.price * line.qty)}
                       </td>
                       <td className="rounded-r-xl border border-l-0 border-line bg-surface2 p-2">
                         <button
@@ -140,7 +141,7 @@ export default function CartDrawer({ onCheckout }) {
             <div className="border-t border-line px-5 py-4">
               <div className="mb-1 flex items-center justify-between text-sm text-white/60">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
               <div className="mb-4 flex items-center justify-between text-sm text-white/60">
                 <span>Shipping</span>
@@ -148,14 +149,14 @@ export default function CartDrawer({ onCheckout }) {
               </div>
               <div className="mb-4 flex items-center justify-between border-t border-dashed border-line pt-3 font-display text-base font-bold text-white">
                 <span>Total</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>{formatPrice(subtotal)}</span>
               </div>
               <button
                 type="button"
                 onClick={handleCheckout}
                 className="w-full cursor-pointer rounded-full bg-lime py-3 text-sm font-bold text-ink shadow-glow transition-transform hover:scale-[1.02] active:scale-95"
               >
-                Checkout · ${subtotal.toFixed(2)}
+                Checkout · {formatPrice(subtotal)}
               </button>
             </div>
           </>

@@ -20,6 +20,7 @@ import { useCart } from "../context/CartContext"
 import { api } from "../lib/api"
 import { getRelatedProducts } from "../hooks/useCatalog"
 import StarRating from "./StarRating"
+import { formatPrice } from "../lib/currency"
 
 const REVIEWS_PER_PAGE = 5
 
@@ -201,11 +202,11 @@ function ProductDetail({ product, allProducts, onBack, onSelectProduct }) {
           </a>
 
           <div className="mt-4 flex flex-wrap items-baseline gap-2.5 border-b border-line pb-5">
-            <span className="font-display text-3xl font-bold text-white">${product.price}</span>
+            <span className="font-display text-3xl font-bold text-white">{formatPrice(product.price)}</span>
             {product.originalPrice && (
               <>
                 <span className="text-base text-white/35 line-through">
-                  ${product.originalPrice}
+                  {formatPrice(product.originalPrice)}
                 </span>
                 <span className="rounded-full bg-lime/15 px-2.5 py-1 text-xs font-bold text-lime">
                   Save {discount}%
@@ -279,7 +280,7 @@ function ProductDetail({ product, allProducts, onBack, onSelectProduct }) {
 
         <aside className="lg:col-span-2 xl:col-span-1">
           <div className="mx-auto w-full max-w-md rounded-2xl border border-line bg-surface p-5 xl:sticky xl:top-24 xl:max-w-none">
-            <p className="font-display text-2xl font-bold text-white">${product.price}</p>
+            <p className="font-display text-2xl font-bold text-white">{formatPrice(product.price)}</p>
             <p className="mt-1 flex items-center gap-1.5 text-xs text-lime">
               <Truck size={13} /> Free shipping
             </p>
@@ -362,7 +363,7 @@ function ProductDetail({ product, allProducts, onBack, onSelectProduct }) {
               ) : (
                 <ShoppingBag size={16} />
               )}
-              {soldOut ? "Sold out" : `Add to Bag · $${(product.price * qty).toFixed(2)}`}
+              {soldOut ? "Sold out" : `Add to Bag · ${formatPrice(product.price * qty)}`}
             </button>
 
             {inCart && (
@@ -444,11 +445,11 @@ function ProductDetail({ product, allProducts, onBack, onSelectProduct }) {
                   </p>
                   <div className="mt-1.5 flex items-center gap-2">
                     <span className="font-display text-base font-bold text-white">
-                      ${item.price}
+                      {formatPrice(item.price)}
                     </span>
                     {item.originalPrice && (
                       <span className="text-xs text-white/35 line-through">
-                        ${item.originalPrice}
+                        {formatPrice(item.originalPrice)}
                       </span>
                     )}
                   </div>

@@ -10,6 +10,7 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { api } from "../lib/api"
+import { formatPrice } from "../lib/currency"
 
 const STATUS_STYLES = {
   live: "bg-lime/15 text-lime",
@@ -120,7 +121,7 @@ function ProductsTab({ onSelectProduct }) {
           <thead>
             <tr className="border-b border-line bg-surface2 text-left text-xs uppercase tracking-wide text-white/45">
               <th className="px-4 py-3 font-medium">Product</th>
-              <th className="px-4 py-3 font-medium">Price ($)</th>
+              <th className="px-4 py-3 font-medium">Price (₹)</th>
               <th className="px-4 py-3 font-medium">Stock</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium"></th>
@@ -340,7 +341,7 @@ function OrdersTab() {
 
               <div className="flex items-center gap-3">
                 <span className="font-display text-lg font-bold text-white">
-                  ${order.total.toFixed(2)}
+                  {formatPrice(order.total)}
                 </span>
                 <select
                   value={order.status}

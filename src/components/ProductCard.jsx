@@ -1,5 +1,6 @@
 import { Heart, Eye, ShoppingBag, Star, Check, Minus, Plus } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { formatPrice } from "../lib/currency"
 
 const TAG_STYLES = {
   "RARE FIND": "bg-pink text-white",
@@ -72,8 +73,8 @@ export default function ProductCard({ product, onQuickView, onSelectProduct }) {
         </h3>
 
         <div className="mt-1 flex items-center gap-2">
-          <span className="font-display text-base font-bold text-white">${product.price}</span>
-          <span className="text-xs text-white/35 line-through">${product.originalPrice}</span>
+          <span className="font-display text-base font-bold text-white">{formatPrice(product.price)}</span>
+          <span className="text-xs text-white/35 line-through">{formatPrice(product.originalPrice)}</span>
           <span className="text-xs font-semibold text-lime">-{discount}%</span>
         </div>
 

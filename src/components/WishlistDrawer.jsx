@@ -1,5 +1,6 @@
 import { X, Heart, ShoppingBag, Trash2 } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { formatPrice } from "../lib/currency"
 
 export default function WishlistDrawer() {
   const { wishlist, isWishlistOpen, setWishlistOpen, removeFromWishlist, addToCart } = useCart()
@@ -75,8 +76,8 @@ export default function WishlistDrawer() {
                     <p className="truncate text-sm font-semibold text-white">{product.name}</p>
                     <p className="text-xs text-white/40">{product.brand}</p>
                     <div className="mt-1 flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">${product.price}</span>
-                      <span className="text-xs text-white/35 line-through">${product.originalPrice}</span>
+                      <span className="text-sm font-bold text-white">{formatPrice(product.price)}</span>
+                      <span className="text-xs text-white/35 line-through">{formatPrice(product.originalPrice)}</span>
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">

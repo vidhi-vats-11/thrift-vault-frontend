@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { X, Heart, Minus, Plus, ShoppingBag, Star, Leaf, ArrowRight } from "lucide-react"
 import { useCart } from "../context/CartContext"
+import { formatPrice } from "../lib/currency"
 
 export default function ProductModal({ product, onClose, onViewDetails }) {
   const { addToCart, wishlistIds, toggleWishlist } = useCart()
@@ -63,8 +64,8 @@ export default function ProductModal({ product, onClose, onViewDetails }) {
           </div>
 
           <div className="mt-4 flex items-center gap-2">
-            <span className="font-display text-3xl font-bold text-white">${product.price}</span>
-            <span className="text-sm text-white/35 line-through">${product.originalPrice}</span>
+            <span className="font-display text-3xl font-bold text-white">{formatPrice(product.price)}</span>
+            <span className="text-sm text-white/35 line-through">{formatPrice(product.originalPrice)}</span>
             <span className="rounded-full bg-lime/15 px-2 py-0.5 text-xs font-semibold text-lime">
               -{discount}%
             </span>
@@ -134,7 +135,7 @@ export default function ProductModal({ product, onClose, onViewDetails }) {
               }}
               className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-full bg-lime py-3 text-sm font-bold text-ink shadow-glow transition-transform hover:scale-[1.02] active:scale-95"
             >
-              <ShoppingBag size={16} /> Add to Bag · ${(product.price * qty).toFixed(2)}
+              <ShoppingBag size={16} /> Add to Bag · {formatPrice(product.price * qty)}
             </button>
             <button
               type="button"

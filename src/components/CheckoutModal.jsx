@@ -19,6 +19,7 @@ import { useCart } from "../context/CartContext"
 import { useAuth } from "../context/AuthContext"
 import { api } from "../lib/api"
 import QrCode from "./QrCode"
+import { formatPrice } from "../lib/currency"
 
 const UPI_WINDOW_SECONDS = 300
 
@@ -377,20 +378,20 @@ export default function CheckoutModal({ open, onClose }) {
                       <p className="text-[11px] text-white/40">Size {line.size}</p>
                     </div>
                     <span className="text-xs font-semibold text-white">
-                      ${(line.price * line.qty).toFixed(2)}
+                      {formatPrice(line.price * line.qty)}
                     </span>
                   </div>
                 ))}
               </div>
 
               <dl className="mt-5 flex flex-col gap-1.5 border-t border-line pt-4 text-sm">
-                <Row label="Subtotal" value={`$${subtotal.toFixed(2)}`} />
+                <Row label="Subtotal" value={formatPrice(subtotal)} />
                 <Row label="Shipping" value="Free" valueClass="text-lime" />
               </dl>
 
               <div className="mt-3 flex items-center justify-between border-t border-dashed border-line pt-3 font-display text-base font-bold text-white">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{formatPrice(total)}</span>
               </div>
 
               <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-white/35">
@@ -434,7 +435,7 @@ export default function CheckoutModal({ open, onClose }) {
                 className="ml-auto flex cursor-pointer items-center gap-2 rounded-full bg-lime px-6 py-3 font-display text-sm font-bold text-ink shadow-glow transition-transform hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Lock size={14} />
-                {method === "cod" ? `Place Order · $${total.toFixed(2)}` : `Pay $${total.toFixed(2)}`}
+                {method === "cod" ? `Place Order · ${formatPrice(total)}` : `Pay ${formatPrice(total)}`}
               </button>
             )}
 
@@ -607,7 +608,7 @@ function PaymentStep({ method, setMethod, card, setCard, upiId, setUpiId, total,
               </p>
               <p className="mt-1.5 text-xs leading-relaxed text-white/45">
                 Open GPay, PhonePe, Paytm or your bank app and scan the code to pay
-                <span className="font-semibold text-white"> ${total.toFixed(2)}</span>.
+                <span className="font-semibold text-white"> {formatPrice(total)}</span>.
               </p>
 
               {UPI_QR_IMAGE && (
@@ -705,7 +706,7 @@ function PaymentStep({ method, setMethod, card, setCard, upiId, setUpiId, total,
             </span>
             <div>
               <p className="font-display text-sm font-bold text-white">
-                Pay ${total.toFixed(2)} when it arrives
+                Pay {formatPrice(total)} when it arrives
               </p>
               <p className="mt-1.5 text-xs leading-relaxed text-white/45">
                 Hand cash to the delivery partner at your door. No extra charge. Please keep
@@ -797,7 +798,7 @@ function SuccessStep({ order, address }) {
         <ReceiptRow label="Paid with" value={methodLabel} />
         <ReceiptRow
           label={order.method === "cod" ? "Amount due" : "Amount paid"}
-          value={<span className="font-bold text-white">${order.total.toFixed(2)}</span>}
+          value={<span className="font-bold text-white">{formatPrice(order.total)}</span>}
         />
         <ReceiptRow label="Delivering to" value={`${address.city} ${address.pincode}`} />
         <ReceiptRow
