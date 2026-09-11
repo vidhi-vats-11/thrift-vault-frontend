@@ -20,19 +20,24 @@ import { useAuth } from "../context/AuthContext"
 import { api } from "../lib/api"
 import QrCode from "./QrCode"
 import { formatPrice } from "../lib/currency"
+// Imported rather than referenced from public/ on purpose: Vite resolves this at
+// build time, so if the file is ever moved or renamed the build FAILS instead of
+// shipping a checkout with a broken image. A payment screen is the worst possible
+// place to discover a silent 404.
+import upiQrImage from "../assets/upi-qr.png"
 
 const UPI_WINDOW_SECONDS = 300
 
-// ── YOUR UPI SCANNER GOES HERE ────────────────────────────────────────────────
-// 1. Save your QR image as:  Frontend/public/upi-qr.png
-// 2. Set UPI_QR_IMAGE to:    "/upi-qr.png"
-// 3. Put your real UPI ID in UPI_VPA so the on-screen text matches the code.
+// ── UPI SCANNER ───────────────────────────────────────────────────────────────
+// A real Google Pay QR. The source screenshot was cropped to the code itself and
+// given a white quiet zone — scanners need that margin, and the uncropped image
+// rendered the code too small to scan reliably in the 160px frame below.
 //
-// Anything in public/ is served from the site root, so "/upi-qr.png" is the
-// correct path — do NOT write "public/upi-qr.png". PNG, JPG and SVG all work.
-// While UPI_QR_IMAGE is null the checkout draws a generated placeholder instead.
-const UPI_QR_IMAGE = null
-const UPI_VPA = "thriftvault@demoupi"
+// UPI_VPA must stay in step with whatever this QR actually encodes: it is printed
+// on screen as the payee, so a mismatch tells the customer one thing while the
+// code does another.
+const UPI_QR_IMAGE = upiQrImage
+const UPI_VPA = "vidhii.vats@oksbi"
 
 const METHODS = [
   {
