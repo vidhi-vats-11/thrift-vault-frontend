@@ -12,6 +12,7 @@ import {
   Check,
   XCircle,
   ShoppingBag,
+  CalendarClock,
 } from "lucide-react"
 import { api } from "../lib/api"
 import { useCart } from "../context/CartContext"
@@ -231,6 +232,23 @@ function OrderCard({ order, onReturn, onChanged }) {
         </div>
       </div>
 
+      {/* The single most-asked question about any order, so it goes directly under
+          the header rather than inside a collapsed section. */}
+      {!isCancelled && order.expectedDeliveryAt && (
+        <p className="mt-3 flex items-center gap-2 rounded-xl border border-lime/30 bg-lime/5 px-3 py-2 text-sm">
+          <CalendarClock size={15} className="shrink-0 text-lime" />
+          <span className="text-white/80">
+            {order.deliveredAt ? "Delivered on " : "Arriving by "}
+            <span className="font-semibold text-lime">
+              {new Date(order.deliveredAt ?? order.expectedDeliveryAt).toLocaleDateString(
+                undefined,
+                { weekday: "short", day: "numeric", month: "short" }
+              )}
+            </span>
+          </span>
+        </p>
+      )}
+
       {/* Tracking timeline */}
       {isCancelled ? (
         <p className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-surface2 p-3 text-sm text-white/50">
@@ -273,6 +291,41 @@ function OrderCard({ order, onReturn, onChanged }) {
             )
           })}
         </div>
+      )}
+
+      {/* Where the parcel has actually been. The stepper above shows the stage;
+          this shows the journey, which is what people scroll down looking for. */}
+      {!isCancelled && order.events?.length > 0 && (
+        <ol className="mt-4 flex flex-col gap-2 border-t border-line pt-4">
+          {order.events.map((e, i) => (
+            <li key={e.id} className="flex gap-3">
+              <span className="flex flex-col items-center">
+                <span
+                  className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
+                    i === 0 ? "bg-lime" : "bg-white/20"
+                  }`}
+                />
+                {i < order.events.length - 1 && <span className="w-px flex-1 bg-line" />}
+              </span>
+              <span className="min-w-0 pb-1">
+                <span
+                  className={`block text-sm ${i === 0 ? "font-semibold text-white" : "text-white/60"}`}
+                >
+                  {e.label}
+                  {e.location && <span className="font-normal text-lime/70"> · {e.location}</span>}
+                </span>
+                <span className="block text-xs text-white/30">
+                  {new Date(e.createdAt).toLocaleString(undefined, {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </span>
+            </li>
+          ))}
+        </ol>
       )}
 
       <div className="mt-4 flex flex-col gap-2 border-t border-line pt-4">

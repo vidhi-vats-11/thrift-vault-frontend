@@ -215,8 +215,16 @@ export const api = {
     products: () => request("/admin/products"),
     updateProduct: (id, body) => request(`/admin/products/${id}`, { method: "PATCH", body }),
     orders: (status) => request(`/admin/orders${qs({ status })}`),
-    updateOrder: (id, status) =>
-      request(`/admin/orders/${id}`, { method: "PATCH", body: { status } }),
+    // `location`/`note` ride along with the status so the tracking line the customer
+    // reads is written in the same request that moves the order.
+    updateOrder: (id, status, { location, note } = {}) =>
+      request(`/admin/orders/${id}`, { method: "PATCH", body: { status, location, note } }),
+    addOrderEvent: (id, body) =>
+      request(`/admin/orders/${id}/events`, { method: "POST", body }),
+    setOrderEta: (id, expectedDeliveryAt) =>
+      request(`/admin/orders/${id}/eta`, { method: "PATCH", body: { expectedDeliveryAt } }),
+    refundPayment: (paymentId) =>
+      request(`/payments/${paymentId}/refund`, { method: "POST" }),
     // Returns 204 with no body. Restocks the items first if the order was still
     // holding them, so deleting a pending checkout can't strand a one-of-one piece.
     deleteOrder: (id) => request(`/admin/orders/${id}`, { method: "DELETE" }),

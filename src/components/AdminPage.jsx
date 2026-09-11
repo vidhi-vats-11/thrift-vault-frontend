@@ -11,6 +11,15 @@ import {
   Trash2,
   Undo2,
   X,
+  ChevronDown,
+  ChevronUp,
+  MapPin,
+  Phone,
+  Mail,
+  User,
+  CreditCard,
+  Truck,
+  Plus,
 } from "lucide-react"
 import { api } from "../lib/api"
 import { formatPrice } from "../lib/currency"
@@ -21,9 +30,16 @@ const STATUS_STYLES = {
   archived: "bg-white/10 text-white/50",
   paid: "bg-lime/15 text-lime",
   pending_payment: "bg-violet/20 text-violet",
+  // Without entries for these the lookup returns undefined and the <select> renders
+  // as an unstyled white box — easy to miss when adding a status to the enum.
+  shipped: "bg-violet/20 text-violet",
+  delivered: "bg-lime/15 text-lime",
   cancelled: "bg-pink/15 text-pink",
   fulfilled: "bg-white/15 text-white",
 }
+
+/** Never let a missing key strip the styling off the control. */
+const statusStyle = (status) => STATUS_STYLES[status] ?? "bg-white/10 text-white/70"
 
 export default function AdminPage({ onBack, onSelectProduct }) {
   const [tab, setTab] = useState("products")
@@ -242,7 +258,7 @@ function ProductRow({ product, onSaved, onSelectProduct }) {
         <select
           value={status}
           onChange={(e) => setStatus(e.target.value)}
-          className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold uppercase outline-none ${STATUS_STYLES[status]}`}
+          className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold uppercase outline-none ${statusStyle(status)}`}
         >
           <option value="live" className="bg-surface text-white">live</option>
           <option value="sold" className="bg-surface text-white">sold</option>
@@ -298,12 +314,17 @@ function OrdersTab() {
     load()
   }, [load])
 
+  // Keeps the customer block when merging a server response: order endpoints return
+  // the order, not the joined user, so a naive replace would blank the contact details.
+  const replaceOrder = useCallback((updated) => {
+    setOrders((list) =>
+      list.map((o) => (o.id === updated.id ? { ...o, ...updated, customer: o.customer } : o))
+    )
+  }, [])
+
   async function changeStatus(id, status) {
     try {
-      const updated = await api.admin.updateOrder(id, status)
-      setOrders((list) =>
-        list.map((o) => (o.id === id ? { ...o, ...updated, customer: o.customer } : o))
-      )
+      replaceOrder(await api.admin.updateOrder(id, status))
     } catch (err) {
       setError(describe(err))
     }
@@ -353,7 +374,7 @@ function OrdersTab() {
           <div key={order.id} className="rounded-2xl border border-line bg-surface p-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="font-mono text-xs text-lime">{order.id}</p>
+                <p className="truncate font-mono text-xs text-lime">{order.id}</p>
                 <p className="mt-1 text-sm font-semibold text-white">
                   {order.customer?.name}{" "}
                   <span className="font-normal text-white/40">{order.customer?.email}</span>
@@ -365,14 +386,16 @@ function OrdersTab() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <span className="font-display text-lg font-bold text-white">
+              {/* Wraps on a phone: a large total plus the status control and the
+                  delete button do not fit on one line at 320px. */}
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <span className="whitespace-nowrap font-display text-lg font-bold text-white">
                   {formatPrice(order.total)}
                 </span>
                 <select
                   value={order.status}
                   onChange={(e) => changeStatus(order.id, e.target.value)}
-                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold uppercase outline-none ${STATUS_STYLES[order.status]}`}
+                  className={`cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold uppercase outline-none ${statusStyle(order.status)}`}
                 >
                   {/* pending_payment is listed so the current value renders, but the
                       API only accepts a move to paid / cancelled / fulfilled. */}
@@ -380,6 +403,8 @@ function OrdersTab() {
                     pending_payment
                   </option>
                   <option value="paid" className="bg-surface text-white">paid</option>
+                  <option value="shipped" className="bg-surface text-white">shipped</option>
+                  <option value="delivered" className="bg-surface text-white">delivered</option>
                   <option value="fulfilled" className="bg-surface text-white">fulfilled</option>
                   <option value="cancelled" className="bg-surface text-white">cancelled</option>
                 </select>
@@ -409,13 +434,7 @@ function OrdersTab() {
               ))}
             </div>
 
-            {order.address && (
-              <p className="mt-3 text-xs text-white/35">
-                Ship to: {order.address.recipientName ?? "—"}
-                {order.address.phone ? ` (${order.address.phone})` : ""} · {order.address.line1},{" "}
-                {order.address.city}, {order.address.state} {order.address.postalCode}
-              </p>
-            )}
+            <FulfilmentPanel order={order} onChanged={replaceOrder} onError={setError} />
 
             {confirmingId === order.id && (
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-pink/40 bg-pink/10 p-3">
@@ -453,6 +472,227 @@ function OrdersTab() {
         ))}
       </div>
     </>
+  )
+}
+
+// ── fulfilment ────────────────────────────────────────────────────────────────
+
+/**
+ * Everything needed to actually put a parcel in a box and send it.
+ *
+ * Deliberately one panel rather than a separate screen: whoever is packing an order
+ * needs the address, the phone number and the tracking control in the same glance.
+ * Splitting them across pages is how the wrong thing gets sent to the right person.
+ */
+function FulfilmentPanel({ order, onChanged, onError }) {
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(null)
+  const [label, setLabel] = useState("")
+  const [location, setLocation] = useState("")
+  const [eta, setEta] = useState("")
+
+  const a = order.address
+  const c = order.customer
+
+  const run = async (key, fn) => {
+    setBusy(key)
+    try {
+      onChanged(await fn())
+    } catch (err) {
+      onError(describe(err))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function addCheckpoint(e) {
+    e.preventDefault()
+    if (!label.trim()) return
+    await run("event", () =>
+      api.admin.addOrderEvent(order.id, { label: label.trim(), location: location.trim() || undefined })
+    )
+    setLabel("")
+    setLocation("")
+  }
+
+  return (
+    <div className="mt-3 border-t border-line pt-3">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-white/50 hover:text-lime"
+      >
+        {open ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        {open ? "Hide" : "Delivery, payment & tracking"}
+      </button>
+
+      {open && (
+        <div className="mt-3 grid gap-3 lg:grid-cols-2">
+          {/* who and where */}
+          <div className="min-w-0 rounded-xl border border-line bg-surface2 p-3.5">
+            <h4 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wide text-lime">
+              <MapPin size={13} /> Deliver to
+            </h4>
+            {a ? (
+              <address className="not-italic text-sm leading-relaxed text-white/80">
+                <span className="font-semibold text-white">{a.recipientName ?? c?.name ?? "—"}</span>
+                <br />
+                {a.line1}
+                {a.line2 ? <>, {a.line2}</> : null}
+                <br />
+                {a.city}, {a.state} {a.postalCode}
+                <br />
+                {a.country}
+              </address>
+            ) : (
+              <p className="text-sm text-white/40">No address on this order.</p>
+            )}
+            <dl className="mt-3 flex flex-col gap-1 border-t border-line pt-2.5 text-xs">
+              <Detail icon={<Phone size={12} />} label="Phone" value={a?.phone || c?.phone || "—"} />
+              <Detail icon={<Mail size={12} />} label="Email" value={c?.email ?? "—"} />
+              <Detail icon={<User size={12} />} label="Gender" value={c?.gender ?? "not set"} />
+            </dl>
+          </div>
+
+          {/* money */}
+          <div className="min-w-0 rounded-xl border border-line bg-surface2 p-3.5">
+            <h4 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wide text-lime">
+              <CreditCard size={13} /> Payment
+            </h4>
+            {order.payment ? (
+              <>
+                <dl className="flex flex-col gap-1 text-xs">
+                  <Detail label="Status" value={order.payment.status} />
+                  <Detail label="Gateway" value={order.payment.gateway} />
+                  <Detail label="Reference" value={order.payment.gatewayRef} mono />
+                  <Detail label="Amount" value={formatPrice(order.total)} />
+                </dl>
+                {order.payment.status === "captured" && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      run("refund", () => api.admin.refundPayment(order.payment.id).then(() => api.admin.orders().then((r) => r.data.find((o) => o.id === order.id))))
+                    }
+                    disabled={busy === "refund"}
+                    className="mt-3 flex cursor-pointer items-center gap-1.5 rounded-full border border-pink/50 px-3 py-1.5 text-xs font-bold text-pink transition-colors hover:bg-pink/10 disabled:opacity-50"
+                  >
+                    {busy === "refund" ? <Loader2 size={13} className="animate-spin" /> : <Undo2 size={13} />}
+                    Refund this payment
+                  </button>
+                )}
+                {order.payment.status === "refunded" && (
+                  <p className="mt-3 rounded-lg bg-pink/10 px-2.5 py-1.5 text-xs text-pink">
+                    Refunded — the order was cancelled.
+                  </p>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-white/40">No payment recorded.</p>
+            )}
+          </div>
+
+          {/* tracking */}
+          <div className="min-w-0 rounded-xl border border-line bg-surface2 p-3.5 lg:col-span-2">
+            <h4 className="mb-2 flex items-center gap-1.5 font-display text-xs font-bold uppercase tracking-wide text-lime">
+              <Truck size={13} /> Tracking
+            </h4>
+
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-white/40">Arriving by</span>
+              <input
+                type="date"
+                value={eta || (order.expectedDeliveryAt ? order.expectedDeliveryAt.slice(0, 10) : "")}
+                onChange={(e) => setEta(e.target.value)}
+                className="cursor-pointer rounded-lg border border-line bg-ink px-2.5 py-1.5 text-white outline-none focus:border-lime"
+              />
+              <button
+                type="button"
+                disabled={!eta || busy === "eta"}
+                onClick={() =>
+                  run("eta", () =>
+                    // noon avoids the date shifting a day either way across timezones
+                    api.admin.setOrderEta(order.id, new Date(eta + "T12:00:00").toISOString())
+                  )
+                }
+                className="cursor-pointer rounded-full bg-lime px-3 py-1.5 font-bold text-ink disabled:opacity-40"
+              >
+                {busy === "eta" ? "Saving…" : "Set date"}
+              </button>
+              {order.shippedAt && (
+                <span className="text-white/35">
+                  Shipped {new Date(order.shippedAt).toLocaleDateString()}
+                </span>
+              )}
+            </div>
+
+            <form onSubmit={addCheckpoint} className="mb-3 flex flex-wrap gap-2">
+              <input
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                placeholder="Reached Mumbai hub"
+                maxLength={120}
+                className="min-w-0 flex-1 rounded-lg border border-line bg-ink px-2.5 py-1.5 text-xs text-white outline-none placeholder:text-white/25 focus:border-lime"
+              />
+              <input
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Location (optional)"
+                maxLength={120}
+                className="min-w-0 flex-1 rounded-lg border border-line bg-ink px-2.5 py-1.5 text-xs text-white outline-none placeholder:text-white/25 focus:border-lime"
+              />
+              <button
+                type="submit"
+                disabled={!label.trim() || busy === "event"}
+                className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-bold text-white/70 hover:border-lime hover:text-lime disabled:opacity-40"
+              >
+                {busy === "event" ? <Loader2 size={13} className="animate-spin" /> : <Plus size={13} />}
+                Add update
+              </button>
+            </form>
+
+            {order.events?.length > 0 ? (
+              <ol className="flex flex-col gap-1.5 border-t border-line pt-2.5">
+                {order.events.map((e) => (
+                  <li key={e.id} className="flex min-w-0 flex-wrap items-baseline gap-x-2 break-words text-xs">
+                    <span className="font-mono text-white/30">
+                      {new Date(e.createdAt).toLocaleString(undefined, {
+                        day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                      })}
+                    </span>
+                    <span className="text-white/80">{e.label}</span>
+                    {e.location && <span className="text-lime/70">· {e.location}</span>}
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="border-t border-line pt-2.5 text-xs text-white/35">
+                No tracking updates yet. Moving the status above adds one automatically.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function Detail({ icon, label, value, mono }) {
+  return (
+    <div className="flex justify-between gap-3">
+      <dt className="flex shrink-0 items-center gap-1.5 text-white/40">
+        {icon}
+        {label}
+      </dt>
+      {/* min-w-0 is what actually lets `truncate` work: a flex item defaults to
+          min-width:auto and refuses to shrink below its content, so a long unbroken
+          value like a gateway reference silently widens the whole card instead. */}
+      <dd
+        className={`min-w-0 truncate text-right text-white/80 ${mono ? "font-mono" : ""}`}
+        title={typeof value === "string" ? value : undefined}
+      >
+        {value}
+      </dd>
+    </div>
   )
 }
 
