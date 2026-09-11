@@ -3,12 +3,6 @@ import { api, clearSession, hasSession, setSessionLostHandler, storeSession } fr
 
 const AuthContext = createContext(null)
 
-// Seeded by Backend/prisma/seed.js — handy for signing in without registering.
-export const DEMO_CREDENTIALS = {
-  email: "shopper@thriftvault.test",
-  password: "Password123!",
-}
-
 // The pre-API build kept accounts, cart and wishlist in localStorage under these
 // keys. They hold static product ids like "tv-001" which the API rejects (it uses
 // UUIDs), so clear them once rather than letting them cause confusing failures.

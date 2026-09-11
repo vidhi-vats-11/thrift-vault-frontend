@@ -13,7 +13,7 @@ import {
   ShieldCheck,
   Truck,
 } from "lucide-react"
-import { useAuth, DEMO_CREDENTIALS } from "../context/AuthContext"
+import { useAuth } from "../context/AuthContext"
 
 const PERKS = [
   { icon: Sparkles, text: "One-of-one vintage, hand-picked weekly" },
@@ -43,13 +43,6 @@ export default function AuthPage() {
     setError("")
     setPassword("")
     setConfirm("")
-  }
-
-  function fillDemo() {
-    setMode("login")
-    setError("")
-    setEmail(DEMO_CREDENTIALS.email)
-    setPassword(DEMO_CREDENTIALS.password)
   }
 
   async function handleSubmit(e) {
@@ -258,15 +251,8 @@ export default function AuthPage() {
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-white/40">
               Accounts are real and stored in the API's database — payments are the only
-              simulated part. Sign in with the seeded demo account or register your own.
+              simulated part, so no card is ever charged.
             </p>
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="mt-3 cursor-pointer rounded-full border border-lime/40 bg-lime/10 px-3.5 py-1.5 text-xs font-bold text-lime transition-colors hover:bg-lime hover:text-ink"
-            >
-              Use demo account
-            </button>
           </div>
 
           <p className="mt-5 text-center text-sm text-white/40">
