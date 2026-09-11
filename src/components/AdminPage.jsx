@@ -8,6 +8,9 @@ import {
   Check,
   RefreshCw,
   ExternalLink,
+  Trash2,
+  Undo2,
+  X,
 } from "lucide-react"
 import { api } from "../lib/api"
 import { formatPrice } from "../lib/currency"
@@ -40,16 +43,17 @@ export default function AdminPage({ onBack, onSelectProduct }) {
         Changes here write straight to the database — reload the storefront to see them.
       </p>
 
-      <div className="mt-6 inline-flex rounded-full border border-line bg-surface p-1">
+      <div className="mt-6 inline-flex max-w-full overflow-x-auto rounded-full border border-line bg-surface p-1">
         {[
           { key: "products", label: "Products", icon: Package },
           { key: "orders", label: "Orders", icon: Receipt },
+          { key: "returns", label: "Returns", icon: Undo2 },
         ].map((t) => (
           <button
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
-            className={`flex cursor-pointer items-center gap-2 rounded-full px-5 py-2 font-display text-sm font-bold transition-colors ${
+            className={`flex cursor-pointer items-center gap-2 whitespace-nowrap rounded-full px-4 py-2 font-display text-sm font-bold transition-colors sm:px-5 ${
               tab === t.key ? "bg-lime text-ink" : "text-white/50 hover:text-white"
             }`}
           >
@@ -62,8 +66,10 @@ export default function AdminPage({ onBack, onSelectProduct }) {
       <div className="mt-6">
         {tab === "products" ? (
           <ProductsTab onSelectProduct={onSelectProduct} />
-        ) : (
+        ) : tab === "orders" ? (
           <OrdersTab />
+        ) : (
+          <ReturnsTab />
         )}
       </div>
     </div>
@@ -269,6 +275,11 @@ function OrdersTab() {
   const [orders, setOrders] = useState([])
   const [isLoading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Which order is showing its "are you sure?" strip, and which is mid-delete.
+  // An inline strip rather than window.confirm: a native dialog blocks the whole
+  // page and can't say anything order-specific, like whether stock comes back.
+  const [confirmingId, setConfirmingId] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -295,6 +306,21 @@ function OrdersTab() {
       )
     } catch (err) {
       setError(describe(err))
+    }
+  }
+
+  async function removeOrder(id) {
+    setDeletingId(id)
+    setError(null)
+    try {
+      await api.admin.deleteOrder(id)
+      // Drop it locally instead of refetching — the list is already correct.
+      setOrders((list) => list.filter((o) => o.id !== id))
+      setConfirmingId(null)
+    } catch (err) {
+      setError(describe(err))
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -357,6 +383,15 @@ function OrdersTab() {
                   <option value="fulfilled" className="bg-surface text-white">fulfilled</option>
                   <option value="cancelled" className="bg-surface text-white">cancelled</option>
                 </select>
+                <button
+                  type="button"
+                  onClick={() => setConfirmingId(confirmingId === order.id ? null : order.id)}
+                  title="Delete order"
+                  aria-label={`Delete order ${order.id}`}
+                  className="cursor-pointer rounded-full border border-line p-2 text-white/45 transition-colors hover:border-pink hover:text-pink"
+                >
+                  <Trash2 size={15} />
+                </button>
               </div>
             </div>
 
@@ -381,6 +416,39 @@ function OrdersTab() {
                 {order.address.city}, {order.address.state} {order.address.postalCode}
               </p>
             )}
+
+            {confirmingId === order.id && (
+              <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-pink/40 bg-pink/10 p-3">
+                <p className="text-xs text-white/70">
+                  Delete this order permanently? Its items and payment records go with it.
+                  {order.status === "pending_payment"
+                    ? " The pieces it is holding will be returned to the catalogue."
+                    : " This cannot be undone."}
+                </p>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmingId(null)}
+                    className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white"
+                  >
+                    Keep
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => removeOrder(order.id)}
+                    disabled={deletingId === order.id}
+                    className="flex cursor-pointer items-center gap-1.5 rounded-full bg-pink px-3 py-1.5 text-xs font-bold text-black disabled:opacity-60"
+                  >
+                    {deletingId === order.id ? (
+                      <Loader2 size={13} className="animate-spin" />
+                    ) : (
+                      <Trash2 size={13} />
+                    )}
+                    Delete
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
@@ -389,6 +457,173 @@ function OrdersTab() {
 }
 
 // ── shared ────────────────────────────────────────────────────────────────────
+
+// ── returns ───────────────────────────────────────────────────────────────────
+
+const RETURN_STATUS_STYLES = {
+  requested: "bg-violet/20 text-violet",
+  approved: "bg-lime/15 text-lime",
+  rejected: "bg-pink/15 text-pink",
+  completed: "bg-white/15 text-white",
+}
+
+function ReturnsTab() {
+  const [returns, setReturns] = useState([])
+  const [isLoading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [busyId, setBusyId] = useState(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await api.admin.returns()
+      setReturns(res.data)
+    } catch (err) {
+      setError(describe(err))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  async function resolve(id, status) {
+    setBusyId(id)
+    setError(null)
+    try {
+      const updated = await api.admin.resolveReturn(id, status)
+      setReturns((list) => list.map((r) => (r.id === id ? { ...r, ...updated } : r)))
+    } catch (err) {
+      setError(describe(err))
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  if (isLoading) return <Spinner />
+  if (error) return <ErrorBox message={error} onRetry={load} />
+
+  if (returns.length === 0) {
+    return (
+      <p className="rounded-2xl border border-dashed border-line py-16 text-center text-sm text-white/40">
+        No returns yet. They appear here as soon as a shopper requests one.
+      </p>
+    )
+  }
+
+  const open = returns.filter((r) => r.status === "requested").length
+
+  return (
+    <>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <p className="text-sm text-white/45">
+          {returns.length} total · {open} awaiting review
+        </p>
+        <button
+          type="button"
+          onClick={load}
+          className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-white/60 hover:border-lime hover:text-lime"
+        >
+          <RefreshCw size={13} /> Refresh
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        {returns.map((r) => (
+          <div key={r.id} className="rounded-2xl border border-line bg-surface p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="flex min-w-0 items-center gap-3">
+                {r.item?.image && (
+                  <img src={r.item.image} alt="" className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                )}
+                <div className="min-w-0">
+                  <p className="font-mono text-xs text-lime">{r.reference}</p>
+                  <p className="truncate text-sm font-semibold text-white">{r.item?.name}</p>
+                  <p className="truncate text-xs text-white/40">
+                    {r.customer?.email} · {new Date(r.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="whitespace-nowrap rounded-full bg-surface2 px-2.5 py-1 text-[11px] font-bold uppercase text-white/70">
+                  {r.type}
+                </span>
+                <span
+                  className={`whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold uppercase ${
+                    RETURN_STATUS_STYLES[r.status] ?? "bg-white/10 text-white/60"
+                  }`}
+                >
+                  {r.status}
+                </span>
+              </div>
+            </div>
+
+            <p className="mt-3 border-t border-line pt-3 text-sm text-white/70">
+              <span className="text-white/40">Reason:</span> {r.reasonLabel}
+              {r.note && <span className="block text-white/45">&ldquo;{r.note}&rdquo;</span>}
+            </p>
+
+            {/* Completing is the only action that touches stock — it puts the
+                one-of-one piece back on the shelf, so it is deliberately a separate
+                step from approving. */}
+            {r.status !== "completed" && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {r.status === "requested" && (
+                  <>
+                    <ActionButton
+                      busy={busyId === r.id}
+                      onClick={() => resolve(r.id, "approved")}
+                      icon={<Check size={13} />}
+                      label="Approve"
+                      tone="lime"
+                    />
+                    <ActionButton
+                      busy={busyId === r.id}
+                      onClick={() => resolve(r.id, "rejected")}
+                      icon={<X size={13} />}
+                      label="Reject"
+                      tone="pink"
+                    />
+                  </>
+                )}
+                {r.status === "approved" && (
+                  <ActionButton
+                    busy={busyId === r.id}
+                    onClick={() => resolve(r.id, "completed")}
+                    icon={<Undo2 size={13} />}
+                    label="Mark received — restock item"
+                    tone="lime"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function ActionButton({ busy, onClick, icon, label, tone }) {
+  const tones = {
+    lime: "bg-lime text-ink",
+    pink: "border border-pink/50 text-pink hover:bg-pink/10",
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className={`flex cursor-pointer items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-bold transition-colors disabled:opacity-50 ${tones[tone]}`}
+    >
+      {busy ? <Loader2 size={13} className="animate-spin" /> : icon}
+      {label}
+    </button>
+  )
+}
 
 function describe(err) {
   if (err?.status === undefined) return "Can't reach the API. Is the backend running on port 4000?"

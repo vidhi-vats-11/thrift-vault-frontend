@@ -29,16 +29,27 @@ export default function MobileMenu({ open, onClose, links, searchTerm, onSearchC
           </button>
         </div>
 
-        <div className="relative mb-6">
+        {/* Submitting closes the menu and drops the shopper onto the results. Without
+            this, searching on a phone means typing, then realising you have to
+            dismiss the panel yourself before you can see anything. */}
+        <form
+          className="relative mb-6"
+          onSubmit={(e) => {
+            e.preventDefault()
+            onClose()
+            document.getElementById("shop")?.scrollIntoView({ behavior: "smooth" })
+          }}
+        >
           <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input
-            type="text"
+            type="search"
+            enterKeyHint="search"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search drops, brands..."
+            placeholder="Try 'jeans' or 'something warm'"
             className="w-full cursor-text rounded-full border border-line bg-surface2 py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-lime"
           />
-        </div>
+        </form>
 
         <nav className="flex flex-col gap-1 font-display text-base font-medium">
           {links.map((link) => (

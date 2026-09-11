@@ -43,6 +43,53 @@ export function useCatalog() {
   return { products, categories, isLoading, error, reload: load }
 }
 
+/**
+ * Server-side search, used only while the shopper is actually typing.
+ *
+ * This deliberately does NOT reuse the in-memory filter above. The API understands
+ * far more than a substring match: it maps "jeans" onto the Denim category, reads
+ * price hints out of "cheap jeans", and ranks results by the signed-in shopper's
+ * gender. None of that can be reproduced by filtering an array in the browser, so
+ * once there is a query the answer has to come from the server.
+ *
+ * Debounced so a five-letter word costs one request rather than five.
+ */
+export function useProductSearch(term, delay = 250) {
+  const [results, setResults] = useState([])
+  const [isSearching, setSearching] = useState(false)
+
+  useEffect(() => {
+    const query = term.trim()
+    if (!query) {
+      setResults([])
+      setSearching(false)
+      return
+    }
+
+    setSearching(true)
+    // `cancelled` guards against a slow early request landing after a fast later
+    // one and overwriting newer results with stale ones.
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.products.list({ q: query, limit: 100 })
+        if (!cancelled) setResults(res.data)
+      } catch {
+        if (!cancelled) setResults([])
+      } finally {
+        if (!cancelled) setSearching(false)
+      }
+    }, delay)
+
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [term, delay])
+
+  return { results, isSearching }
+}
+
 /** Same-category first, then same-era, for the "you might also like" rail. */
 export function getRelatedProducts(product, allProducts, limit = 4) {
   if (!product) return []

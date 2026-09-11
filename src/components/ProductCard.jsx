@@ -80,8 +80,13 @@ export default function ProductCard({ product, onQuickView, onSelectProduct }) {
 
         {cartLine ? (
           <div className="mt-2 flex items-center justify-between rounded-full border border-lime bg-lime/10 py-1.5 pl-3 pr-1.5">
-            <span className="flex items-center gap-1 text-[11px] font-bold text-lime">
-              <Check size={13} /> Added to Cart
+            {/* In a two-up mobile grid the card is ~165px wide, so the full label
+                wrapped onto two lines and collided with the stepper. Shortened below
+                `sm`, kept in full where there is room. */}
+            <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] font-bold text-lime">
+              <Check size={13} className="shrink-0" />
+              <span className="hidden sm:inline">Added to Cart</span>
+              <span className="sm:hidden">Added</span>
             </span>
             <div className="flex items-center gap-1 rounded-full bg-ink px-1 py-1">
               <button

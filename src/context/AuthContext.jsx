@@ -74,6 +74,18 @@ export function AuthProvider({ children }) {
     }
   }, [])
 
+  // Kept in the context rather than the page so that everything reading `user`
+  // updates at once — the navbar greeting and the catalogue's gender ranking both
+  // react to a profile change without a reload.
+  const updateProfile = useCallback(async (patch) => {
+    try {
+      setUser(await api.auth.updateProfile(patch))
+      return { ok: true }
+    } catch (err) {
+      return { ok: false, error: friendlyError(err, "Could not save your profile.") }
+    }
+  }, [])
+
   const logout = useCallback(async () => {
     // Revoke server-side where possible, but always drop the local session so a
     // network failure can't trap someone in a signed-in state.
@@ -87,8 +99,16 @@ export function AuthProvider({ children }) {
   }, [])
 
   const value = useMemo(
-    () => ({ user, isAuthenticated: Boolean(user), isLoading, login, signup, logout }),
-    [user, isLoading, login, signup, logout]
+    () => ({
+      user,
+      isAuthenticated: Boolean(user),
+      isLoading,
+      login,
+      signup,
+      logout,
+      updateProfile,
+    }),
+    [user, isLoading, login, signup, logout, updateProfile]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Search, Heart, ShoppingBag, Menu, X, Recycle, LogOut, ShieldCheck } from "lucide-react"
+import { Search, Heart, ShoppingBag, Menu, X, Recycle, LogOut, ShieldCheck, Settings, Package } from "lucide-react"
 import { useCart } from "../context/CartContext"
 import { useAuth } from "../context/AuthContext"
 import MobileMenu from "./MobileMenu"
@@ -16,6 +16,7 @@ export default function Navbar({ searchTerm, onSearchChange }) {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const accountRef = useRef(null)
 
   const initials = (user?.name ?? "?")
@@ -85,6 +86,19 @@ export default function Navbar({ searchTerm, onSearchChange }) {
               />
             </div>
 
+            {/* Below `sm` there is no room for the search field in the header row, and
+                burying search in the hamburger meant most people never found it. This
+                toggles a full-width search row underneath instead. */}
+            <button
+              type="button"
+              aria-label="Search"
+              aria-expanded={searchOpen}
+              onClick={() => setSearchOpen((o) => !o)}
+              className="grid h-10 w-10 cursor-pointer place-items-center rounded-full border border-line bg-surface transition-colors hover:border-lime hover:text-lime sm:hidden"
+            >
+              {searchOpen ? <X size={18} /> : <Search size={18} />}
+            </button>
+
             <button
               type="button"
               aria-label="Open wishlist"
@@ -130,6 +144,20 @@ export default function Navbar({ searchTerm, onSearchChange }) {
                     <p className="truncate text-sm font-semibold text-white">{user?.name}</p>
                     <p className="truncate text-xs text-white/40">{user?.email}</p>
                   </div>
+                  <a
+                    href="#orders"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex w-full cursor-pointer items-center gap-2 border-b border-line px-4 py-3 text-sm font-medium text-white/70 transition-colors hover:bg-surface2 hover:text-lime"
+                  >
+                    <Package size={15} /> Your orders
+                  </a>
+                  <a
+                    href="#account"
+                    onClick={() => setAccountOpen(false)}
+                    className="flex w-full cursor-pointer items-center gap-2 border-b border-line px-4 py-3 text-sm font-medium text-white/70 transition-colors hover:bg-surface2 hover:text-lime"
+                  >
+                    <Settings size={15} /> Account settings
+                  </a>
                   {user?.role === "admin" && (
                     <a
                       href="#admin"
@@ -160,6 +188,32 @@ export default function Navbar({ searchTerm, onSearchChange }) {
             </button>
           </div>
         </div>
+
+        {searchOpen && (
+          <div className="border-t border-line px-4 py-3 sm:hidden">
+            <form
+              className="relative"
+              onSubmit={(e) => {
+                e.preventDefault()
+                e.currentTarget.querySelector("input")?.blur()
+              }}
+            >
+              <Search
+                size={16}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-white/40"
+              />
+              <input
+                type="search"
+                enterKeyHint="search"
+                autoFocus
+                value={searchTerm}
+                onChange={(e) => onSearchChange(e.target.value)}
+                placeholder="Try 'jeans' or 'something warm'"
+                className="w-full cursor-text rounded-full border border-line bg-surface py-2 pl-9 pr-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-lime"
+              />
+            </form>
+          </div>
+        )}
       </header>
 
       <MobileMenu

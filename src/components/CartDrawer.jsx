@@ -28,7 +28,7 @@ export default function CartDrawer({ onCheckout }) {
           isCartOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-line px-5 py-4">
+        <div className="flex items-center justify-between border-b border-line px-4 py-4 sm:px-5">
           <h2 className="flex items-center gap-2 font-display text-lg font-bold text-white">
             <ShoppingBag size={20} className="text-lime" />
             Your Bag
@@ -61,100 +61,113 @@ export default function CartDrawer({ onCheckout }) {
           </div>
         ) : (
           <>
-            <div className="flex-1 overflow-y-auto px-5 py-4">
-              <table className="w-full border-separate border-spacing-y-3">
-                <thead>
-                  <tr className="text-left text-[11px] uppercase tracking-wide text-white/40">
-                    <th className="pb-1 font-medium">Item</th>
-                    <th className="pb-1 font-medium">Qty</th>
-                    <th className="pb-1 text-right font-medium">Total</th>
-                    <th className="pb-1"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {lines.map((line) => (
-                    <tr key={line.key} className="align-top">
-                      <td className="rounded-l-xl border border-r-0 border-line bg-surface2 p-2">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={line.image}
-                            alt={line.name}
-                            className="h-14 w-14 shrink-0 rounded-lg object-cover"
-                          />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-white">{line.name}</p>
-                            <p className="text-xs text-white/40">{line.brand}</p>
-                            <p className="text-xs text-white/40">
-                              Size <span className="text-white/70">{line.size}</span> · {formatPrice(line.price)}
-                            </p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="border border-x-0 border-line bg-surface2 p-2">
-                        <div className="flex items-center gap-1.5 rounded-full border border-line bg-ink px-1.5 py-1 w-fit">
-                          <button
-                            type="button"
-                            aria-label="Decrease quantity"
-                            onClick={() => (line.qty === 1 ? removeFromCart(line.key) : updateQty(line.key, line.qty - 1))}
-                            className="grid h-6 w-6 cursor-pointer place-items-center rounded-full text-white/70 hover:bg-surface2 hover:text-lime"
-                          >
-                            <Minus size={12} />
-                          </button>
-                          <span className="w-4 text-center text-sm font-semibold text-white">{line.qty}</span>
-                          <button
-                            type="button"
-                            aria-label="Increase quantity"
-                            onClick={() => updateQty(line.key, line.qty + 1)}
-                            className="grid h-6 w-6 cursor-pointer place-items-center rounded-full text-white/70 hover:bg-surface2 hover:text-lime"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        </div>
-                      </td>
-                      <td className="border border-x-0 border-line bg-surface2 p-2 text-right text-sm font-semibold text-white">
-                        {formatPrice(line.price * line.qty)}
-                      </td>
-                      <td className="rounded-r-xl border border-l-0 border-line bg-surface2 p-2">
+            {/* A table forced four columns to share a 375px-wide drawer, so the line
+                total and the remove button were pushed off the right edge. A list of
+                flex cards reflows instead: the name truncates, and the price — which
+                must never wrap mid-number — is given whitespace-nowrap and its own
+                row beneath the stepper. */}
+            <ul className="flex-1 space-y-3 overflow-y-auto px-4 py-4 sm:px-5">
+              {lines.map((line) => (
+                <li
+                  key={line.key}
+                  className="flex gap-3 rounded-xl border border-line bg-surface2 p-2.5"
+                >
+                  <img
+                    src={line.image}
+                    alt={line.name}
+                    className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                  />
+
+                  {/* min-w-0 is what actually lets the truncate below work: without it
+                      a flex child refuses to shrink below its content width. */}
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-semibold text-white">{line.name}</p>
+                        <p className="truncate text-xs text-white/40">
+                          {line.brand} · Size <span className="text-white/70">{line.size}</span>
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        aria-label={`Remove ${line.name} from cart`}
+                        onClick={() => removeFromCart(line.key)}
+                        className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 cursor-pointer place-items-center rounded-full text-white/40 transition-colors hover:bg-pink/10 hover:text-pink"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex w-fit shrink-0 items-center gap-1.5 rounded-full border border-line bg-ink px-1.5 py-1">
                         <button
                           type="button"
-                          aria-label={`Remove ${line.name} from cart`}
-                          onClick={() => removeFromCart(line.key)}
-                          className="grid h-8 w-8 cursor-pointer place-items-center rounded-full text-white/40 transition-colors hover:bg-pink/10 hover:text-pink"
+                          aria-label="Decrease quantity"
+                          onClick={() =>
+                            line.qty === 1
+                              ? removeFromCart(line.key)
+                              : updateQty(line.key, line.qty - 1)
+                          }
+                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full text-white/70 hover:bg-surface2 hover:text-lime"
                         >
-                          <Trash2 size={15} />
+                          <Minus size={12} />
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                        <span className="w-4 text-center text-sm font-semibold text-white">
+                          {line.qty}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label="Increase quantity"
+                          onClick={() => updateQty(line.key, line.qty + 1)}
+                          className="grid h-6 w-6 cursor-pointer place-items-center rounded-full text-white/70 hover:bg-surface2 hover:text-lime"
+                        >
+                          <Plus size={12} />
+                        </button>
+                      </div>
 
-              <button
-                type="button"
-                onClick={clearCart}
-                className="mt-1 cursor-pointer text-xs text-white/40 underline decoration-dotted hover:text-pink"
-              >
-                Clear entire bag
-              </button>
-            </div>
+                      <div className="min-w-0 text-right">
+                        <p className="whitespace-nowrap text-sm font-semibold text-white">
+                          {formatPrice(line.price * line.qty)}
+                        </p>
+                        {line.qty > 1 && (
+                          <p className="whitespace-nowrap text-[11px] text-white/40">
+                            {formatPrice(line.price)} each
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              ))}
 
-            <div className="border-t border-line px-5 py-4">
-              <div className="mb-1 flex items-center justify-between text-sm text-white/60">
+              <li>
+                <button
+                  type="button"
+                  onClick={clearCart}
+                  className="cursor-pointer text-xs text-white/40 underline decoration-dotted hover:text-pink"
+                >
+                  Clear entire bag
+                </button>
+              </li>
+            </ul>
+
+            <div className="border-t border-line px-4 py-4 sm:px-5">
+              <div className="mb-1 flex items-center justify-between gap-3 text-sm text-white/60">
                 <span>Subtotal</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span className="whitespace-nowrap">{formatPrice(subtotal)}</span>
               </div>
-              <div className="mb-4 flex items-center justify-between text-sm text-white/60">
+              <div className="mb-4 flex items-center justify-between gap-3 text-sm text-white/60">
                 <span>Shipping</span>
-                <span className="text-lime">Free</span>
+                <span className="whitespace-nowrap text-lime">Free</span>
               </div>
-              <div className="mb-4 flex items-center justify-between border-t border-dashed border-line pt-3 font-display text-base font-bold text-white">
+              <div className="mb-4 flex items-center justify-between gap-3 border-t border-dashed border-line pt-3 font-display text-base font-bold text-white">
                 <span>Total</span>
-                <span>{formatPrice(subtotal)}</span>
+                <span className="whitespace-nowrap">{formatPrice(subtotal)}</span>
               </div>
               <button
                 type="button"
                 onClick={handleCheckout}
-                className="w-full cursor-pointer rounded-full bg-lime py-3 text-sm font-bold text-ink shadow-glow transition-transform hover:scale-[1.02] active:scale-95"
+                className="w-full cursor-pointer whitespace-nowrap rounded-full bg-lime py-3 text-sm font-bold text-ink shadow-glow transition-transform hover:scale-[1.02] active:scale-95"
               >
                 Checkout · {formatPrice(subtotal)}
               </button>

@@ -134,6 +134,7 @@ export const api = {
     signup: (body) => request("/auth/signup", { method: "POST", body, auth: false }),
     login: (body) => request("/auth/login", { method: "POST", body, auth: false }),
     me: () => request("/auth/me"),
+    updateProfile: (body) => request("/auth/me", { method: "PATCH", body }),
     refresh: refreshSession,
     logout: () => {
       const refreshToken = getRefreshToken()
@@ -143,7 +144,10 @@ export const api = {
   },
 
   products: {
-    list: (params) => request(`/products${qs(params)}`, { auth: false }),
+    // Sent WITH credentials when there is a session: /products is public, but it
+    // uses the signed-in shopper's gender to rank results (never to filter them).
+    // Signed out, `request` simply omits the header and the default order applies.
+    list: (params) => request(`/products${qs(params)}`),
     get: (id) => request(`/products/${id}`, { auth: false }),
   },
 
@@ -180,6 +184,13 @@ export const api = {
       }),
     list: () => request("/orders"),
     get: (id) => request(`/orders/${id}`),
+    cancel: (id) => request(`/orders/${id}/cancel`, { method: "POST" }),
+  },
+
+  returns: {
+    reasons: () => request("/orders/returns/reasons"),
+    mine: () => request("/orders/returns/mine"),
+    create: (body) => request("/orders/returns", { method: "POST", body }),
   },
 
   newsletter: {
@@ -195,6 +206,12 @@ export const api = {
     orders: (status) => request(`/admin/orders${qs({ status })}`),
     updateOrder: (id, status) =>
       request(`/admin/orders/${id}`, { method: "PATCH", body: { status } }),
+    // Returns 204 with no body. Restocks the items first if the order was still
+    // holding them, so deleting a pending checkout can't strand a one-of-one piece.
+    deleteOrder: (id) => request(`/admin/orders/${id}`, { method: "DELETE" }),
+    returns: (status) => request(`/admin/returns${qs({ status })}`),
+    resolveReturn: (id, status) =>
+      request(`/admin/returns/${id}`, { method: "PATCH", body: { status } }),
   },
 
   payments: {
