@@ -20,6 +20,7 @@ import ProductPage from "./components/ProductPage"
 import AdminPage from "./components/AdminPage"
 import AccountPage from "./components/AccountPage"
 import SearchResults from "./components/SearchResults"
+import RankedProductGrid from "./components/RankedProductGrid"
 import OrdersPage from "./components/OrdersPage"
 import BrowseSections from "./components/BrowseSections"
 import HelpAssistant from "./components/HelpAssistant"
@@ -241,7 +242,7 @@ function ShopContent() {
                 </div>
               </div>
               <CatalogState isLoading={isLoading} error={error} onRetry={reload}>
-                <ProductGrid
+                <RankedProductGrid
                   products={filteredProducts}
                   onQuickView={setQuickViewProduct}
                   onSelectProduct={openProduct}

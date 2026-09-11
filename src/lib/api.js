@@ -227,29 +227,15 @@ export const api = {
 
   payments: {
     /**
-     * Drives the order to "paid" through the API's real webhook pipeline.
+     * Settles the order for the demo.
      *
-     * In production the payment provider calls POST /payments/webhook server-to-server
-     * with an HMAC signature. There is no provider here, so we ask the API's dev-only
-     * signing helper for the signature and post the webhook ourselves. That helper
-     * 404s when NODE_ENV=production, so this path cannot be used against a real deploy.
+     * With a real provider this happens server-to-server: the gateway posts a signed
+     * webhook to /payments/webhook and the browser is never involved. There is no
+     * provider here, so the client tells the API its own order is paid and the API
+     * verifies ownership before settling it. The browser no longer handles webhook
+     * signatures at all — it never should have.
      */
-    simulateCapture: async (gatewayRef, { fail = false } = {}) => {
-      const body = {
-        event: fail ? "payment.failed" : "payment.captured",
-        payload: { payment: { entity: { id: gatewayRef } } },
-      }
-      const { signature } = await request("/payments/mock/sign", {
-        method: "POST",
-        body,
-        auth: false,
-      })
-      return request("/payments/webhook", {
-        method: "POST",
-        body,
-        headers: { "x-webhook-signature": signature },
-        auth: false,
-      })
-    },
+    simulateCapture: (gatewayRef, { fail = false } = {}) =>
+      request("/payments/mock/confirm", { method: "POST", body: { gatewayRef, fail } }),
   },
 }

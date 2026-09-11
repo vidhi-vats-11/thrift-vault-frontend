@@ -1,5 +1,5 @@
 import { Loader2, SearchX, X } from "lucide-react"
-import ProductGrid from "./ProductGrid"
+import RankedProductGrid from "./RankedProductGrid"
 import CategoryStrip from "./CategoryStrip"
 
 // Suggestions are phrased to show off what the search actually understands —
@@ -87,7 +87,7 @@ export default function SearchResults({
             </div>
           </div>
         ) : (
-          <ProductGrid
+          <RankedProductGrid
             products={results}
             onQuickView={onQuickView}
             onSelectProduct={onSelectProduct}
