@@ -250,8 +250,9 @@ export default function AuthPage() {
               Demo website
             </p>
             <p className="mt-1.5 text-xs leading-relaxed text-white/40">
-              Accounts are real and stored in the API's database — payments are the only
-              simulated part, so no card is ever charged.
+              Accounts, stock and orders are real and stored in the API&apos;s database.
+              Payments are real too — the UPI code at checkout moves actual money — but
+              nothing is ever delivered, so please don&apos;t pay.
             </p>
           </div>
 

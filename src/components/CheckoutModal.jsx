@@ -400,8 +400,9 @@ export default function CheckoutModal({ open, onClose }) {
               </div>
 
               <p className="mt-4 flex items-start gap-2 text-[11px] leading-relaxed text-white/35">
-                <ShieldCheck size={14} className="mt-px shrink-0 text-lime/70" />
-                The order and stock reservation are real; only the payment is simulated.
+                <AlertCircle size={14} className="mt-px shrink-0 text-pink/70" />
+                The order, the stock reservation and the payment are all real. Nothing is
+                ever delivered.
               </p>
             </aside>
           )}
@@ -552,7 +553,13 @@ function PaymentStep({ method, setMethod, card, setCard, upiId, setUpiId, total,
   return (
     <>
       <h3 className="font-display text-lg font-bold text-white">How would you like to pay?</h3>
-      <p className="mt-1 text-sm text-white/40">All three options are simulated.</p>
+      {/* Only UPI is wired to a real QR; the card and COD flows are still forms that
+          go nowhere. Saying "all three are simulated" is no longer true and is the
+          dangerous direction to be wrong in. */}
+      <p className="mt-1 text-sm text-white/40">
+        UPI moves <span className="font-semibold text-pink">real money</span>. Card and
+        cash on delivery are simulated.
+      </p>
 
       <div className="mt-5 flex flex-col gap-2.5">
         {METHODS.map((m) => {
@@ -619,8 +626,8 @@ function PaymentStep({ method, setMethod, card, setCard, upiId, setUpiId, total,
               {UPI_QR_IMAGE && (
                 <p className="mt-2 flex items-start gap-1.5 rounded-lg border border-pink/40 bg-pink/10 px-2.5 py-1.5 text-[11px] leading-relaxed text-pink">
                   <AlertCircle size={13} className="mt-px shrink-0" />
-                  This is a real QR code — scanning it will move actual money. The rest of
-                  the checkout is still simulated.
+                  This is a real QR code — scanning it moves actual money out of your
+                  account, and nothing will ever be delivered to you. Please don&apos;t pay.
                 </p>
               )}
 

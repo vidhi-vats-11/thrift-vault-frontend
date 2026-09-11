@@ -55,7 +55,7 @@ const KNOWLEDGE = [
     keywords: ["payment", "pay", "card", "upi", "checkout", "billing"],
     chips: [],
     answer:
-      "This is a demo store, so payments are simulated — no card is ever charged. Everything else is real: your account, the stock, and the orders you place.",
+      "Please don't pay. The UPI code at checkout is a real one, so scanning it moves actual money out of your account — but this is a demo store and nothing is ever delivered. Card and cash on delivery are simulated and charge you nothing. Your account, the stock and the orders are all real.",
   },
   {
     id: "stock",

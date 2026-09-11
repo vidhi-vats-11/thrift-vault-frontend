@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { Info, Loader2, AlertCircle, RefreshCw, Recycle, X } from "lucide-react"
+import { Loader2, AlertCircle, RefreshCw, Recycle, X, AlertTriangle } from "lucide-react"
 import { CartProvider } from "./context/CartContext"
 import { AuthProvider, useAuth } from "./context/AuthContext"
 import { useCatalog, useProductSearch } from "./hooks/useCatalog"
@@ -109,9 +109,15 @@ function ShopContent() {
 
   return (
     <div className="min-h-screen bg-ink">
-      <p className="flex items-center justify-center gap-2 bg-lime/10 px-4 py-2 text-center text-[11px] font-medium text-lime">
-        <Info size={13} className="shrink-0" />
-        Demo store — payments are simulated, but accounts, stock and orders are real.
+      {/* Styled as a warning, not an info notice. This banner used to say payments
+          were simulated; a real UPI QR is now wired into checkout, so the same lime
+          "all is well" treatment would undersell a message about losing money. */}
+      <p className="flex items-center justify-center gap-2 bg-pink/10 px-4 py-2 text-center text-[11px] font-medium leading-relaxed text-pink">
+        <AlertTriangle size={13} className="mt-px shrink-0" />
+        <span>
+          Payments are real and will move actual money — pay at your own risk. This is a
+          demo store: no order is ever delivered.
+        </span>
       </p>
 
       <Navbar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
