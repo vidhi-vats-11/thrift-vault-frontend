@@ -107,7 +107,18 @@ async function request(path, options = {}) {
   // refresh token survives. Refresh up front rather than firing a request we know
   // will 401 — that round trip is wasted and shows up as a console error.
   if (needsAuth && !accessToken && getRefreshToken()) {
-    await refreshSession()
+    if (options.authOptional) {
+      // The catalogue is public but sends credentials when it has them, so it can
+      // be ranked for the signed-in shopper. A stale or revoked refresh token must
+      // therefore NOT take the shop down with it — fall through and ask anonymously.
+      try {
+        await refreshSession()
+      } catch {
+        /* browsing signed out */
+      }
+    } else {
+      await refreshSession()
+    }
   }
 
   try {
@@ -147,7 +158,7 @@ export const api = {
     // Sent WITH credentials when there is a session: /products is public, but it
     // uses the signed-in shopper's gender to rank results (never to filter them).
     // Signed out, `request` simply omits the header and the default order applies.
-    list: (params) => request(`/products${qs(params)}`),
+    list: (params) => request(`/products${qs(params)}`, { authOptional: true }),
     get: (id) => request(`/products/${id}`, { auth: false }),
   },
 
