@@ -165,9 +165,43 @@ export default function OrdersPage({ onBack, onBrowse }) {
 function OrderCard({ order, onReturn, onChanged }) {
   const { refresh, pushToast } = useCart()
   const [isReordering, setReordering] = useState(false)
+  const [isCancelling, setCancelling] = useState(false)
+  const [confirmCancel, setConfirmCancel] = useState(false)
 
   const active = stepIndexFor(order.status)
   const isCancelled = order.status === "cancelled"
+
+  // Mirrors CANCELLABLE_STATUSES on the server. The button disappears the moment an
+  // order ships, because from then on the garment is in transit and undoing the sale
+  // is a return, not a cancellation. The server enforces this too — this only decides
+  // whether to show the button, never whether the action is allowed.
+  const canCancel = order.status === "pending_payment" || order.status === "paid"
+
+  async function cancelThisOrder() {
+    setCancelling(true)
+    try {
+      await api.orders.cancel(order.id)
+      pushToast(
+        order.status === "paid"
+          ? "Order cancelled — refunded, and the pieces are back in the vault"
+          : "Order cancelled — the pieces are back in the vault",
+        "cart"
+      )
+      setConfirmCancel(false)
+      onChanged?.()
+    } catch (err) {
+      // Surface the server's wording: if it shipped between page load and this click,
+      // its message explains that returns are the way, which a generic error would not.
+      pushToast(
+        err?.status === undefined
+          ? "Can't reach the API. Is the backend running on port 4000?"
+          : (err.message ?? "Could not cancel this order"),
+        "error"
+      )
+    } finally {
+      setCancelling(false)
+    }
+  }
 
   /**
    * Reorder is best-effort by necessity. Every piece is one-of-one, so items from an
@@ -386,7 +420,56 @@ function OrderCard({ order, onReturn, onChanged }) {
           )}
           Buy these again
         </button>
+
+        {canCancel && !confirmCancel && (
+          <button
+            type="button"
+            onClick={() => setConfirmCancel(true)}
+            className="flex cursor-pointer items-center gap-1.5 rounded-full border border-pink/50 px-3.5 py-2 text-xs font-semibold text-pink transition-colors hover:bg-pink/10"
+          >
+            <XCircle size={13} /> Cancel order
+          </button>
+        )}
       </div>
+
+      {/* An inline strip rather than window.confirm: a native dialog blocks the page
+          and can't say anything order-specific, such as whether money comes back. */}
+      {confirmCancel && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-pink/40 bg-pink/10 p-3">
+          <p className="min-w-0 text-xs text-white/75">
+            Cancel this order?{" "}
+            {order.status === "paid"
+              ? "You'll be refunded and the pieces go back on sale."
+              : "The pieces go straight back on sale."}{" "}
+            <span className="text-white/45">
+              Every piece is one-of-one, so someone else may buy it the moment you do.
+            </span>
+          </p>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={() => setConfirmCancel(false)}
+              disabled={isCancelling}
+              className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white disabled:opacity-50"
+            >
+              Keep it
+            </button>
+            <button
+              type="button"
+              onClick={cancelThisOrder}
+              disabled={isCancelling}
+              className="flex cursor-pointer items-center gap-1.5 rounded-full bg-pink px-3 py-1.5 text-xs font-bold text-black disabled:opacity-60"
+            >
+              {isCancelling ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <XCircle size={13} />
+              )}
+              Cancel order
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
