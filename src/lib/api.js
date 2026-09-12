@@ -4,6 +4,14 @@
 // (30 days) in localStorage. On a 401 the client transparently refreshes once and
 // replays the request, so callers never deal with expiry.
 
+// The backend URL is configured in exactly ONE place: the VITE_API_URL env var
+// (see .env.example). It must already include the API's base path — every call
+// below appends a bare route like "/auth/login" straight onto it.
+//
+// Vite inlines env vars at BUILD time, so a production bundle built without
+// VITE_API_URL would silently ship the localhost fallback and fail for every
+// shopper. vite.config.js refuses to build in that case, so the fallback here is
+// only ever reached by `npm run dev` on a developer's machine.
 const API_BASE = import.meta.env.VITE_API_URL ?? "http://localhost:4000/api/v1"
 const REFRESH_KEY = "thrift-vault-refresh"
 
