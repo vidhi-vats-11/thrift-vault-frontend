@@ -14,10 +14,15 @@ export default function SearchResults({
   categories,
   activeCategory,
   onCategoryChange,
+  activeGender,
+  onClearFilters,
+  onSuggest,
   onClear,
   onQuickView,
   onSelectProduct,
 }) {
+  const hasFilters = activeCategory !== "All" || Boolean(activeGender)
+
   return (
     <section className="border-b border-line">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
@@ -46,7 +51,10 @@ export default function SearchResults({
           </button>
         </div>
 
-        {results.length > 0 && (
+        {/* Shown whenever there are results OR a filter is narrowing them. It used
+            to be hidden on an empty result set, which hid the very chip that had
+            emptied it — the shopper saw "nothing matched" with no way to tell why. */}
+        {(results.length > 0 || hasFilters) && (
           <div className="mb-6">
             <CategoryStrip
               categories={categories}
@@ -67,24 +75,50 @@ export default function SearchResults({
               <SearchX size={26} />
             </div>
             <p className="font-display text-white/70">Nothing matched “{term}”</p>
-            <p className="max-w-sm px-6 text-sm text-white/40">
-              Every piece here is one-of-one, so stock moves fast. Try something broader:
-            </p>
-            <div className="mt-1 flex flex-wrap justify-center gap-2 px-6">
-              {SUGGESTIONS.map((s) => (
-                <a
-                  key={s}
-                  href="#shop"
-                  onClick={(e) => {
-                    e.preventDefault()
-                    onClear()
-                  }}
-                  className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-white/60 transition-colors hover:border-lime hover:text-lime"
+
+            {hasFilters ? (
+              // The query itself may well have matched — a filter is hiding the
+              // results. Say so, and offer the one click that fixes it.
+              <>
+                <p className="max-w-sm px-6 text-sm text-white/40">
+                  {activeCategory !== "All" && activeGender
+                    ? `You're still filtered to ${activeCategory} and ${activeGender}.`
+                    : activeCategory !== "All"
+                      ? `You're still filtered to ${activeCategory}.`
+                      : `You're still filtered to ${activeGender}.`}{" "}
+                  There may be matches outside it.
+                </p>
+                <button
+                  type="button"
+                  onClick={onClearFilters}
+                  className="mt-1 cursor-pointer rounded-full border border-lime px-3 py-1.5 text-xs font-semibold text-lime transition-colors hover:bg-lime hover:text-ink"
                 >
-                  {s}
-                </a>
-              ))}
-            </div>
+                  Search all categories
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="max-w-sm px-6 text-sm text-white/40">
+                  Every piece here is one-of-one, so stock moves fast. Try something
+                  broader:
+                </p>
+                <div className="mt-1 flex flex-wrap justify-center gap-2 px-6">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      // Runs the suggested search. This used to call onClear, so
+                      // tapping a suggestion wiped the query and dumped the shopper
+                      // back on the shop page — the opposite of what it advertises.
+                      onClick={() => onSuggest(s)}
+                      className="cursor-pointer rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-white/60 transition-colors hover:border-lime hover:text-lime"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <RankedProductGrid

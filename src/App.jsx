@@ -40,6 +40,28 @@ function ShopContent() {
   const { results: searchResults, isSearching: isSearchLoading } = useProductSearch(searchTerm)
   const isSearching = Boolean(searchTerm.trim())
 
+  // Starting a *new* search clears the category and gender chips. Without this a
+  // chip left over from browsing silently filters the server's results down to
+  // nothing — searching "denim" while the Jackets chip was active returned
+  // "Nothing matched denim" even though the API had found four denim pieces.
+  // Narrowing within results still works: the chips stay live once results are
+  // on screen, this only stops a stale one leaking into a fresh query.
+  const handleSearchChange = useCallback(
+    (value) => {
+      if (!searchTerm.trim() && value.trim()) {
+        setActiveCategory("All")
+        setActiveGender(null)
+      }
+      setSearchTerm(value)
+    },
+    [searchTerm]
+  )
+
+  const clearSearchFilters = useCallback(() => {
+    setActiveCategory("All")
+    setActiveGender(null)
+  }, [])
+
   // Jump back to the top when a search starts, so the results are the first thing
   // on screen rather than wherever the shopper happened to be scrolled to.
   useEffect(() => {
@@ -120,7 +142,7 @@ function ShopContent() {
         </span>
       </p>
 
-      <Navbar searchTerm={searchTerm} onSearchChange={setSearchTerm} />
+      <Navbar searchTerm={searchTerm} onSearchChange={handleSearchChange} />
 
       {isAdminView ? (
         <main>
@@ -159,9 +181,18 @@ function ShopContent() {
             categories={categories}
             activeCategory={activeCategory}
             onCategoryChange={setActiveCategory}
+            // Passed so the empty state can say a filter is hiding the matches,
+            // and offer a way out. activeGender has no chip in this view, so
+            // without this it could never be cleared from a search at all.
+            activeGender={activeGender}
+            onClearFilters={clearSearchFilters}
+            // Suggestions run the search they advertise. They used to call
+            // onClear, so tapping "jacket under 3000" wiped the query instead.
+            onSuggest={setSearchTerm}
             onClear={() => {
               setSearchTerm("")
               setActiveCategory("All")
+              setActiveGender(null)
             }}
             onQuickView={setQuickViewProduct}
             onSelectProduct={openProduct}
