@@ -57,7 +57,7 @@ export default function ReturnWizard({ item, order, onClose, onCompleted }) {
     } catch (err) {
       setError(
         err?.status === undefined
-          ? "Can't reach the API. Is the backend running on port 4000?"
+          ? "Can't reach the server — it may be waking up. Try again in a moment."
           : err.message
       )
     } finally {

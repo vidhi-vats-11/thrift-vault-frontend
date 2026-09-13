@@ -68,7 +68,7 @@ export default function OrdersPage({ onBack, onBrowse }) {
     } catch (err) {
       setError(
         err?.status === undefined
-          ? "Can't reach the API. Is the backend running on port 4000?"
+          ? "Can't reach the server — it may be waking up. Try again in a moment."
           : err.message
       )
     } finally {
@@ -194,7 +194,7 @@ function OrderCard({ order, onReturn, onChanged }) {
       // its message explains that returns are the way, which a generic error would not.
       pushToast(
         err?.status === undefined
-          ? "Can't reach the API. Is the backend running on port 4000?"
+          ? "Can't reach the server — it may be waking up. Try again in a moment."
           : (err.message ?? "Could not cancel this order"),
         "error"
       )

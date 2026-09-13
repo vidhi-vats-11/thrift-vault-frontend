@@ -23,7 +23,9 @@ export default function Newsletter() {
       setEmail("")
     } catch (err) {
       pushToast(
-        err?.status === undefined ? "Can't reach the API right now." : err.message,
+        err?.status === undefined
+          ? "Can't reach the server — it may be waking up. Try again in a moment."
+          : err.message,
         "error"
       )
     } finally {

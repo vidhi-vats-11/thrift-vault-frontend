@@ -57,7 +57,7 @@ export default function ProductPage({ productId, allProducts, onBack, onSelectPr
           err?.status === 404
             ? "That piece isn't in the vault anymore — it may have sold."
             : err?.status === undefined
-              ? "Can't reach the API. Is the backend running on port 4000?"
+              ? "Can't reach the server — it may be waking up. Try again in a moment."
               : err.message
         )
       })

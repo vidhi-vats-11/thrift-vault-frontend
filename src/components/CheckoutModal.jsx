@@ -280,7 +280,7 @@ export default function CheckoutModal({ open, onClose }) {
         const names = err.details.unavailable.map((u) => u.name).join(", ")
         setError(`Someone just bought ${names}. Remove it from your bag to continue.`)
       } else if (err?.status === undefined) {
-        setError("Can't reach the API. Is the backend running on port 4000?")
+        setError("Can't reach the server — it may be waking up. Try again in a moment.")
       } else {
         setError(err.message)
       }

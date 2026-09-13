@@ -111,7 +111,7 @@ export function AuthProvider({ children }) {
 function friendlyError(err, fallback) {
   // A failed fetch (API down) has no HTTP status
   if (err?.status === undefined) {
-    return "Can't reach the API. Is the backend running on port 4000?"
+    return "Can't reach the server — it may be waking up. Try again in a moment."
   }
   return err.message || fallback
 }

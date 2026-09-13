@@ -74,7 +74,7 @@ export function CartProvider({ children }) {
       } catch (err) {
         const message =
           err?.status === undefined
-            ? "Can't reach the API — is the backend running?"
+            ? "Can't reach the server — it may be waking up. Try again in a moment."
             : err.message
         pushToast(message, "error", anchorEl)
         return null

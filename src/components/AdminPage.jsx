@@ -866,7 +866,7 @@ function ActionButton({ busy, onClick, icon, label, tone }) {
 }
 
 function describe(err) {
-  if (err?.status === undefined) return "Can't reach the API. Is the backend running on port 4000?"
+  if (err?.status === undefined) return "Can't reach the server — it may be waking up. Try again in a moment."
   if (err.status === 403) return "This account isn't an admin."
   return err.message
 }
